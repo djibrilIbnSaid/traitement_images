@@ -1,8 +1,12 @@
+import os
+from dotenv import load_dotenv
 from core.traitement import Traitement
 import gradio as gr
-import pandas as pd
 
-traitement = Traitement(path_images="BD_images_resized")
+load_dotenv()
+
+
+traitement = Traitement(path_images=os.getenv("DB_IMAGE_PATH"))
 
 discriptors = ["couleur", "forme", "texture", "cnn"]
 

@@ -17,6 +17,10 @@ cd traitement_images
 python3 -m venv .
 source bin/activate
 ```
+4. Créer ou modifier le fichier `.env` à la racine du projet et ajouter les variables d'environnement :
+```bash
+DB_IMAGE_PATH=chemin_de_la_base_de_données
+```
 5. Installer les dépendances :
 ```bash
 pip install -r requirements.txt
