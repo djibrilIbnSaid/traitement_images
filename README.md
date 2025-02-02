@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ```
 6. Exécuter le script principal :
 ```bash
-python run demo.py
+python demo.py
 ```
 
 ## Fonctionnalités
