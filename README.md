@@ -6,20 +6,16 @@ Ce projet est dédié au traitement d'images en utilisant diverses techniques et
 ## Installation
 1. Cloner le dépôt :
 ```bash
-git clone
+git clone https://github.com/djibrilIbnSaid/traitement_images.git
 ```
-2. Installer les dépendances :
+2. Accéder au répertoire du projet :
 ```bash
-pip install -r requirements.txt
+cd traitement_images
 ```
-3. Accéder au répertoire du projet :
+3. Créer et activer un environnement virtuel :
 ```bash
-cd project
-```
-4. Créer et activer un environnement virtuel :
-```bash
-python -m venv env
-source venv/bin/activate
+python3 -m venv .
+source bin/activate
 ```
 5. Installer les dépendances :
 ```bash
@@ -27,34 +23,28 @@ pip install -r requirements.txt
 ```
 6. Exécuter le script principal :
 ```bash
-gradio run demo.py
+python run demo.py
 ```
 
 ## Fonctionnalités
-- **Filtrage d'images** : Application de différents filtres pour améliorer la qualité des images.
-- **Segmentation d'images** : Division des images en segments significatifs pour une analyse plus approfondie.
-- **Détection de contours** : Identification des contours et des bords dans les images.
-- **Transformation d'images** : Redimensionnement, rotation et autres transformations géométriques.
+- **Déscripteur de couleur** : Extraire les couleurs dominantes d'une image.
+- **Déscripteur de fome** : Extraire les formes d'une image.
+- **Déscripteur de texture** : Extraire les textures d'une image.
+- **Déscripteur CNN** : Extraire les caractéristiques d'une image en utilisant un réseau de neurones convolutif.
+- **Calculer la distance des vecteurs d'image** : Calculer la distance entre deux vecteurs d'images.
 
 ## Prérequis
 - Python 3.x
-- Bibliothèques Python : `numpy`, `opencv-python`, `matplotlib`
-
-## Installation
-Clonez le dépôt et installez les dépendances :
-```bash
-git clone https://github.com/votre-utilisateur/projet-traitement-images.git
-cd projet-traitement-images
-pip install -r requirements.txt
-```
+- Bibliothèques Python : `numpy`, `gradio`, `numpy`, `pytorch`, `keras`
 
 ## Structure du Projet
-- `main.py` : Script principal pour exécuter les traitements d'images.
-- `utils/` : Contient des fonctions utilitaires pour le traitement d'images.
-- `tests/` : Contient des tests unitaires pour valider les fonctionnalités.
+- `demo.py` : Script principal pour exécuter les traitements d'images.
+- `mean_average_precision.py` : Calculer la précision moyenne pour évaluer les performances des modèles.
+- `db/` : Contient le code pour la base de données.
+- `core/` : Contient les classes et fonctions pour les traitements d'images.
 
 ## Licence
 Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## Auteurs
-- **Abdoulaye Djibril DIALLO** - *Etudiant* - [Profil GitHub](https://github.com/votre-utilisateur)
+- **Abdoulaye Djibril DIALLO** - *Etudiant* - [Profil GitHub](https://github.com/djibrilIbnSaid)

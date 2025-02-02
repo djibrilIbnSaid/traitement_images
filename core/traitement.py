@@ -3,7 +3,7 @@ from PIL import Image
 from core.descripteur_cnn import DescripteurCNN
 from core.descritpteur_texture import DescripteurTexture
 from core.discripteur_forme import DescripteurForme
-from core.utils import get_images, str_to_vector, vector_to_str
+from core.utils import get_images, str_to_vector, vector_to_str, convert_to_dataframe
 from core.calcul_distance import CalculDistance
 from core.descripteur_couleurs import DescripteurCouleurs
 from core.normalisation import Normalisation
@@ -15,7 +15,7 @@ class Traitement:
         Classe permettant de rechercher des images par similarité
     """
     
-    def __init__(self, path_images=path_images, db_connect='data/db/db.sqlite3', table_name='images_vectors'):
+    def __init__(self, path_images='BD_images_resized', db_connect='db.sqlite3', table_name='images_vectors'):
         """
             Constructeur de la classe Traitement
             Usage:
@@ -30,6 +30,8 @@ class Traitement:
         self.db_connect = SqliteDB(db_connect, offline=True)
         self.table_name = table_name
         self.db_connect.initial_db(self.table_name)
+        self.precisions = []
+        self.get_mean_average_precision(limit=10)
         
         
     def __str__(self):
@@ -38,7 +40,7 @@ class Traitement:
     def __repr__(self):
         self.__str__()
     
-    def recherche_images(self, base_image=None, distance=None, color_descriptor=None, espace_color=None, nomalisation=None, shape_descriptor=None, filter=None, texture_descriptor=None, cnn_descriptor=None, nb_responses=5, p_minowski=1.5, canal_r=2, canal_g=2, canal_b=2, dim_fen=3, interval=4, offline=True):
+    def recherche_images(self, base_image=None, distance=None, color_descriptor=None, espace_color=None, nomalisation=None, shape_descriptor=None, filter=None, texture_descriptor=None, cnn_descriptor=None, nb_responses=5, p_minowski=1.5, canal_r=2, canal_g=2, canal_b=2, dim_fen=3, interval=4, offline=True, maen_average_precision=False):
         """
             Recherche d'images par similarité
             Usage:
@@ -47,13 +49,16 @@ class Traitement:
             Returns:
                 list - Galerie d'images
         """
-        print(f"""distance: {distance} | color_descriptor: {color_descriptor} | espace_color: {espace_color} | nomalisation: {nomalisation}
-              | shape_descriptor: {shape_descriptor} | filter: {filter} | texture_descriptor: {texture_descriptor} | cnn_descriptor: {cnn_descriptor}
-              | nb_responses: {nb_responses} | p_minowski: {p_minowski} | canal_r: {canal_r} | canal_g: {canal_g} | canal_b: {canal_b}
-              | dim_fen: {dim_fen} | interval: {interval} | offline: {offline}""")
+        # print(f"""distance: {distance} | color_descriptor: {color_descriptor} | espace_color: {espace_color} | nomalisation: {nomalisation}
+        #       | shape_descriptor: {shape_descriptor} | filter: {filter} | texture_descriptor: {texture_descriptor} | cnn_descriptor: {cnn_descriptor}
+        #       | nb_responses: {nb_responses} | p_minowski: {p_minowski} | canal_r: {canal_r} | canal_g: {canal_g} | canal_b: {canal_b}
+        #       | dim_fen: {dim_fen} | interval: {interval} | offline: {offline} | maen_average_precision: {maen_average_precision}""")
         
         if base_image is None:
             return[]
+        cnn = None
+        if cnn_descriptor is not None:
+            cnn = DescripteurCNN()
         
         id = f'_{color_descriptor}_{espace_color}_{nomalisation}_{shape_descriptor}_{filter}_{texture_descriptor}_{cnn_descriptor}_{canal_r}_{canal_g}_{canal_b}_{dim_fen}_{interval}'
 
@@ -78,12 +83,12 @@ class Traitement:
             base_image = np.array(base_image)
             
             vecteur_espace_couleur_base, image = self.change_color_space(base_image, espace_color, nomalisation, color_descriptor)
-            vecteur_texture_base = DescripteurTexture.descripteur_texture(image, texture_descriptor)
+            vecteur_texture_base = DescripteurTexture.descripteur_texture(base_image, texture_descriptor)
         
             calcul_distance.vector1 = np.concatenate((vecteur_espace_couleur_base, vecteur_texture_base))
-            calcul_distance.vector1 = np.concatenate((calcul_distance.vector1, self.use_cnn_descriptor(base_image, cnn_descriptor)))
+            calcul_distance.vector1 = np.concatenate((calcul_distance.vector1, self.use_cnn_descriptor(base_image, cnn_descriptor, cnn_model=cnn)))
             
-            calcul_distance.vector1 = np.concatenate((calcul_distance.vector1, DescripteurForme.descripteur_forme(image, shape_descriptor, filter)))
+            calcul_distance.vector1 = np.concatenate((calcul_distance.vector1, DescripteurForme.descripteur_forme(base_image, shape_descriptor, filter)))
             
             # Enregistrement du vecteur dans la base de données
             self.db_connect.insert(self.table_name, [key, vector_to_str(calcul_distance.vector1)])
@@ -93,27 +98,33 @@ class Traitement:
             if self.db_connect.check_exist(key_2):
                 vector_base2 = self.db_connect.select(self.table_name, where="name = ?", params=(key_2,))
                 calcul_distance.vector2 = str_to_vector(vector_base2[0][1]) 
-                images.append({'image': Image.open(filename).convert("RGB"), 'distance': self.cal_distance(distance, calcul_distance)})
+                images.append({'image': Image.open(filename).convert("RGB"), 'distance': self.cal_distance(distance, calcul_distance), 'name': filename.split('/')[-1]})
                 continue
             
             image_o = Image.open(filename).convert("RGB")
             image = np.array(image_o)
 
-            vecteur_espace_couleur, img = self.change_color_space(image, espace_color, nomalisation, color_descriptor)
-            vecteur_texture = DescripteurTexture.descripteur_texture(img, texture_descriptor)
+            vecteur_espace_couleur, _ = self.change_color_space(image, espace_color, nomalisation, color_descriptor)
+            vecteur_texture = DescripteurTexture.descripteur_texture(image, texture_descriptor)
             
             calcul_distance.vector2 = np.concatenate((vecteur_espace_couleur, vecteur_texture))
-            calcul_distance.vector2 = np.concatenate((calcul_distance.vector2, self.use_cnn_descriptor(image, cnn_descriptor)))
+            calcul_distance.vector2 = np.concatenate((calcul_distance.vector2, self.use_cnn_descriptor(image, cnn_descriptor, cnn_model=cnn)))
             
-            calcul_distance.vector2 = np.concatenate((calcul_distance.vector2, DescripteurForme.descripteur_forme(img, shape_descriptor, filter)))
+            calcul_distance.vector2 = np.concatenate((calcul_distance.vector2, DescripteurForme.descripteur_forme(image, shape_descriptor, filter)))
             
             # Enregistrement du vecteur dans la base de données
             self.db_connect.insert(self.table_name, [key_2, vector_to_str(calcul_distance.vector2)])
 
-            images.append({'image': image_o, 'distance': self.cal_distance(distance, calcul_distance)})
+            images.append({'image': image_o, 'distance': self.cal_distance(distance, calcul_distance), 'name': filename.split('/')[-1]})
             
             
-        images = sorted(images, key=lambda x: x['distance'])
+        # images = sorted(images, key=lambda x: x['distance'])
+        images = sorted(images, key=lambda x: (x["distance"], x["name"].startswith(name_base[:7])), reverse=False)
+        
+        if maen_average_precision:
+            return self.mean_average_precision(name_base, images), f"{color_descriptor}_{espace_color}_{nomalisation}_{shape_descriptor}_{filter}_{texture_descriptor}_{cnn_descriptor}_{canal_r}_{canal_g}_{canal_b}_{dim_fen}_{interval}_{distance}"
+        
+        
         images = images[:nb_responses]
         return [image['image'] for image in images]
         
@@ -129,7 +140,13 @@ class Traitement:
                     np.array - Image convertie
         """
         if color_descriptor is None:
+            # return Normalisation.histogramme(nomalisation, image), image
+            return np.array([]), image
+        if color_descriptor == "Blobs":
+            canaux_rgb_indexe = (cr, cg, cb)
+            image = self.use_color_descriptor(image, color_descriptor, color_space, canaux_rgb_indexe, interval, dim_fen)
             return Normalisation.histogramme(nomalisation, image), image
+            
         
         if color_space == "rgb":
             image = ConversionEspaceCouleur.rgb(image)
@@ -164,9 +181,7 @@ class Traitement:
             
             
             
-        if color_descriptor == "Blobs":
-            canaux_rgb_indexe = (cr, cg, cb)
-            image = self.use_color_descriptor(image, color_descriptor, color_space, canaux_rgb_indexe, interval, dim_fen)
+        
         
 
         return Normalisation.histogramme(nomalisation, image), image
@@ -204,24 +219,19 @@ class Traitement:
                 np.array - Descripteur de couleur
         """
         if color_descriptor == "Blobs":
-            type_espace_color = 0
-            if espace_color in ["hsv indexe", "hsl indexe"]:
-                type_espace_color = 1
-            elif espace_color == "rgb indexe":
-                type_espace_color = 2
-            return DescripteurCouleurs.blob(image, type_espace_color, interval=interval, dim_fen=dim_fen, canaux_rgb_indexe=canaux_rgb_indexe)
+            return DescripteurCouleurs.blob(image, espace_color, interval=interval, dim_fen=dim_fen, canaux_rgb_indexe=canaux_rgb_indexe)
         
         
-    def use_cnn_descriptor(self, image, cnn_descriptor):
+    def use_cnn_descriptor(self, image, cnn_descriptor, cnn_model=None):
         """
             Utiliser un descripteur CNN
             Usage:
-                use_cnn_descriptor(image, cnn_descriptor)
+                use_cnn_descriptor(image, cnn_descriptor, cnn_model)
             Returns:
                 np.array - Descripteur CNN
         """
         if cnn_descriptor is not None:
-            return DescripteurCNN().extract_features(image)
+            return cnn_model.extract_features(image, type=cnn_descriptor)
         return np.array([])
 
     def mean_average_precision(self, image, images):
@@ -232,5 +242,31 @@ class Traitement:
             Returns:
                 float - Moyenne de la précision moyenne
         """
-        
+        precision = 0
+        index = 1
+        for i, img in enumerate(images):
+            if image[:7] == img['name'][:7]:
+                if image != img['name']:
+                    precision += index / i
+                    index += 1
+        return precision / 4
+
+    def get_mean_average_precision(self, limit=10):
+        """
+            Récupérer la précision moyenne
+            Usage:
+                get_mean_average_precision(limit)
+            Returns:
+                list - Précision moyenne
+        """
+        data = self.db_connect.select_with_orderby_and_limit(
+            'precisions',
+            columns=['distance', 'color_descriptor', 'espace_color', 'nomalisation', 'shape_descriptor', 'filter', 'texture_descriptor', 'cnn_descriptor', 'p_minowski', 'canal_r', 'canal_g', 'canal_b', 'dim_fen', 'interval', 'precision'],
+            orderby='precision',
+            limit=limit
+        )
+        self.precisions =  convert_to_dataframe(data, ['distance', 'color_descriptor', 'espace_color', 'nomalisation', 'shape_descriptor', 'filter', 'texture_descriptor', 'cnn_descriptor', 'p_minowski', 'canal_r', 'canal_g', 'canal_b', 'dim_fen', 'interval', 'precision'])
+                    
+            
+            
     

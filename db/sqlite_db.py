@@ -42,6 +42,19 @@ class SqliteDB:
         query = f'INSERT INTO "{table_name}" ({columns_str}) VALUES ({placeholders})'
         self.cursor.execute(query, values)
         self.conn.commit()
+    
+
+    def insert_with_check(self, table_name, values, columns=[], col_name='id'):
+        """
+        Insert a row into a table if the key does not already exist.
+        :param table_name: Name of the table.
+        :param values: List of values to insert.
+        """
+        if self.offline == False:
+            return
+        if self.check_exist(values[0], col_name=col_name, table_name=table_name):
+            return
+        self.insert(table_name, values, columns)
 
     def select(self, table_name, columns=['name', 'vector'], where=None, params=None):
         """
@@ -57,6 +70,22 @@ class SqliteDB:
         query = f'SELECT {columns_str} FROM {table_name}{where_clause}'
         self.cursor.execute(query, params or ())
         return self.cursor.fetchall()
+    
+    def select_with_orderby_and_limit(self, table_name, columns=['name', 'vector'], where=None, params=None, orderby='name', limit=5):
+        """
+        Retrieve data from a table with order by desc.
+        :param table_name: Name of the table.
+        :param columns: List of columns to retrieve.
+        :param where: Optional WHERE clause (e.g., "id = ?").
+        :param params: Parameters for the WHERE clause.
+        :return: List of rows matching the query.
+        """
+        columns_str = ', '.join(columns)
+        where_clause = f' WHERE {where}' if where else ''
+        query = f'SELECT {columns_str} FROM {table_name}{where_clause} ORDER BY {orderby} DESC LIMIT {limit}'
+        self.cursor.execute(query, params or ())
+        return self.cursor.fetchall()
+        
 
     def update(self, table_name, set_values, where, params):
         """
@@ -91,7 +120,7 @@ class SqliteDB:
         self.cursor.execute(query)
         self.conn.commit()
     
-    def check_exist(self, key, table_name='images_vectors'):
+    def check_exist(self, key, col_name="name", table_name='images_vectors'):
         """
         Check if a key exists in the database.
         :param key: Key to check.
@@ -99,13 +128,14 @@ class SqliteDB:
         """
         if self.offline == False:
             return False
-        query = f"SELECT 1 FROM {table_name} WHERE name = ?"
+        query = f"SELECT 1 FROM {table_name} WHERE {col_name} = ?"
         self.cursor.execute(query, (key,))
         return self.cursor.fetchone() is not None
 
-    def initial_db(self, table_name='images_vectors'):
+    def initial_db(self, table_name='images_vectors', table_name_precision='precisions'):
         """
         Initialize the database with a default table.
         :param table_name: Name of the default table to create.
         """
         self.create_table(table_name, ['name TEXT PRIMARY KEY', 'vector TEXT'])
+        self.create_table(table_name_precision, ['id TEXT PRIMARY KEY', 'distance TEXT', 'color_descriptor TEXT', 'espace_color TEXT', 'nomalisation TEXT', 'shape_descriptor TEXT', 'filter TEXT', 'texture_descriptor TEXT', 'cnn_descriptor TEXT', 'p_minowski REAL', 'canal_r INTEGER', 'canal_g INTEGER', 'canal_b INTEGER', 'dim_fen INTEGER', 'interval INTEGER', 'precision REAL'])

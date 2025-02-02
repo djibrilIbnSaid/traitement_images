@@ -523,7 +523,7 @@ class ConversionEspaceCouleur:
         return np.stack((R, G, B), axis=2)
     
     
-    def rgb_indexer(image, qr=1, qg=1, qb=1):
+    def rgb_indexer(image, qr=2, qg=2, qb=2):
         """
         Calcule l'index d'une image RGB.
         
@@ -539,8 +539,11 @@ class ConversionEspaceCouleur:
         pas_r = 256 // qr
         pas_g = 256 // qg
         pas_b = 256 // qb
-        index_r = (image[:, :, 0].astype(int)) // pas_r
-        index_g = (image[:, :, 1].astype(int)) // pas_g
-        index_b = (image[:, :, 2].astype(int)) // pas_b
-        result_index = index_b * qr * qg + index_g * qr + index_r
+
+        index_r = image[:, :, 0] // pas_r
+        index_g = image[:, :, 1] // pas_g
+        index_b = image[:, :, 2] // pas_b
+
+        # Correction du calcul de l'index
+        result_index = (index_r * (qg * qb)) + (index_g * qb) + index_b
         return result_index

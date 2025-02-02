@@ -28,3 +28,9 @@ test.py
 traitement.ipynb
 
 data/db/db.sqlite3
+
+db.sqlite3
+db_old.sqlite3
+feature_map.csv
+feature_map_resized.csv
+exceptions.log

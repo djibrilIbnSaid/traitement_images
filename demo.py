@@ -16,11 +16,11 @@ colors = {
 }
 
 color_descriptors = ["2D", "3D", "4D", "H pondere par S", "Blobs"]
-normalisations = ["Occurence", "Frequence", "Statistique"]
+normalisations = ["Occurence", "Frequence", "Statistique", "MinMax", "Rang"]
 descripteur_formes = ["HOG", "HOPN", "HBO", "HBOQ"]
 filters = ["Sobel", "Prewitt", "Scharr"]
 descripteur_textures = ["LBP", "Statistique", "GLCM"]
-cnn_descriptors = ["VGG16"]
+cnn_descriptors = ["VGG16", "MobileNet"]
 
 
 def toggle_fields(selected_discriptors):    
@@ -41,7 +41,11 @@ def change_color_descriptor(espace_color):
         Returns:
             gradio.Dropdown: Espace de couleur
     """
-    return gr.update(choices=colors.get(espace_color, []))
+    new_choices = colors.get(espace_color, [])
+    # Vérifie si la valeur actuelle est toujours valide, sinon, sélectionne la première disponible
+    new_value = new_choices[0] if new_choices else None
+    return gr.update(choices=new_choices, value=new_value)
+    # return gr.update(choices=colors.get(espace_color, []))
 
 def update_gallery(nb_lines, nb_columns):
     """
@@ -64,7 +68,7 @@ def afficher_input_p(selection):
     """
     return gr.update(visible=selection == "minowski", interactive=True, value=1.5)
 
-def afficher_canneaux_rgb_indexe(color_descriptor):
+def afficher_canneaux_rgb_indexe(color_descriptor, espace_color):
     """
         Affiche les canneaux RGB indexé en fonction de l'espace couleur
         Args:
@@ -72,7 +76,7 @@ def afficher_canneaux_rgb_indexe(color_descriptor):
         Returns:
             gradio.Number: Canneaux RGB indexé
     """
-    check_visible = color_descriptor == "Blobs"
+    check_visible = color_descriptor == "Blobs"        
     return (
         gr.update(visible=check_visible, interactive=True, value=2),  # canal_r
         gr.update(visible=check_visible, interactive=True, value=2),  # canal_g
@@ -106,12 +110,12 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
         with gr.Row():
             distance = gr.Dropdown(choices=distances, value=distances[0], label="Distance")
             color_descriptor = gr.Dropdown(choices=color_descriptors, value=color_descriptors[0], label="Discripteur de couleur", visible=False)
-            espace_color = gr.Dropdown(choices=colors.get("2D", []), value=colors.get("2D")[0], label="Espace couleur", visible=False)
+            espace_color = gr.Dropdown(choices=colors.get(color_descriptor.value, []), label="Espace couleur", visible=False)
             nomalisation = gr.Dropdown(choices=normalisations, value=normalisations[0], label="Normalisation")
             shape_descriptor = gr.Dropdown(choices=descripteur_formes, value=descripteur_formes[0], label="Descripteur de forme", visible=False)
             filter = gr.Dropdown(choices=filters, value=filters[0], label="Filtres", visible=False)
             texture_descriptor = gr.Dropdown(choices=descripteur_textures, value=descripteur_textures[0], label="Descripteur de Texture", visible=False)
-            cnn_descriptor = gr.Dropdown(choices=["VGG16"], value=cnn_descriptors[0], label="Descripteur CNN", visible=False)
+            cnn_descriptor = gr.Dropdown(choices=cnn_descriptors, value=cnn_descriptors[0], label="Descripteur CNN", visible=False)
             p = gr.Number(label="Paramètre p de minowski", value=0, minimum=0, visible=False)
             canal_r = gr.Number(label="Canal r indexé", value=2, visible=False)
             canal_g = gr.Number(label="Canal g indexé", value=2, visible=False)
@@ -119,7 +123,7 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
             dim_fen = gr.Number(label="Dimension de la fenêtre", value=3, minimum=1, maximum=10, visible=False)
             interval = gr.Number(label="Intervalle", value=4, minimum=1, maximum=10, visible=False)
 
-            nb_responses = gr.Number(label="Nombre de réponses", value=5, minimum=1, maximum=10)
+            nb_responses = gr.Number(label="Nombre de réponses", value=5, minimum=1)
             nb_lines = gr.Number(label="Nombre de lignes", value=1, minimum=1, maximum=10)
             nb_columns = gr.Number(label="Nombre de colonnes", value=5, minimum=3, maximum=10)
 
@@ -134,23 +138,20 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
     # Met à jour la galerie dynamiquement lors du changement des lignes et colonnes
     nb_lines.change(fn=update_gallery, inputs=[nb_lines, nb_columns], outputs=similarities)
     nb_columns.change(fn=update_gallery, inputs=[nb_lines, nb_columns], outputs=similarities)
-    distance.change(fn=afficher_input_p, inputs=[distance], outputs=p)
-    color_descriptor.change(fn=afficher_canneaux_rgb_indexe, inputs=[color_descriptor], outputs=[canal_r, canal_g, canal_b, dim_fen, interval])
-    
-    
+    distance.change(fn=afficher_input_p, inputs=[distance], outputs=p)    
     discriptors_selected.change(
         fn=toggle_fields,
         inputs=[discriptors_selected],
         outputs=[color_descriptor, espace_color, shape_descriptor, filter, texture_descriptor, cnn_descriptor]
     )
-
     color_descriptor.change(
         fn=change_color_descriptor,
         inputs=[color_descriptor],
         outputs=[espace_color]
     )
+    color_descriptor.change(fn=afficher_canneaux_rgb_indexe, inputs=[color_descriptor, espace_color], outputs=[canal_r, canal_g, canal_b, dim_fen, interval])
     
-    def process_search(base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, p, canal_r, canal_g, canal_b, dim_fen, interval, nb_responses, offline, discriptors_selected):
+    def process_search(base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, p, canal_r, canal_g, canal_b, dim_fen, interval, nb_responses, offline, discriptors_selected, mean_average_precision):
         if "couleur" not in discriptors_selected:
             color_descriptor = None
             espace_color = None
@@ -172,13 +173,26 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
         if "cnn" not in discriptors_selected:
             cnn_descriptor = None
         
-        return traitement.recherche_images(base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, nb_responses, p, canal_r, canal_g, canal_b, dim_fen, interval, offline)
+        return traitement.recherche_images(base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, nb_responses, p, canal_r, canal_g, canal_b, dim_fen, interval, offline, mean_average_precision)
 
     process_button.click(
         fn=process_search,
-        inputs=[base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, p, canal_r, canal_g, canal_b, dim_fen, interval, nb_responses, offline, discriptors_selected],
+        inputs=[base_image, distance, color_descriptor, espace_color, nomalisation, shape_descriptor, filter, texture_descriptor, cnn_descriptor, p, canal_r, canal_g, canal_b, dim_fen, interval, nb_responses, offline, discriptors_selected, mean_average_precision],
         outputs=similarities
     )
     
+    with gr.Row():
+        refresh = gr.Button("Rafraichir les données", variant="secondary")
+    
+    exemples_precisions = gr.Dataframe(traitement.precisions, label="Precisions", interactive=True)
+    
+    def refresh_data():
+        traitement.get_mean_average_precision(limit=20)
+        return traitement.precisions
+    
+    refresh.click(
+        fn=refresh_data,
+        outputs=exemples_precisions
+    )
 
 demo.launch(show_api=False)

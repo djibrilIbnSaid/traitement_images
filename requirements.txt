@@ -1,1 +1,8 @@
 gradio==5.1.0
+keras==3.8.0
+numpy==1.26.4
+pandas==2.2.2
+pillow==10.4.0
+pydantic==2.9.1
+torch==2.2.2
+torchvision==0.17.2

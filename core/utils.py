@@ -51,80 +51,22 @@ def vector_to_str(vecteur):
     """
     return ', '.join(map(str, vecteur))
 
-# Sauvegarder la base de données en fonction de la conversion de l'espace de couleur avec l'histogramme niveau de gris
-def save_database_gray_histogram(images, path, density=False):
-    """
-    Sauvegarde la base de données en fonction de la conversion de l'espace de couleur avec l'histogramme niveau de gris.
 
-    Args:
-        images (list): La liste d'images.
-        path (str): Le fichier csv.
+def convert_to_dataframe(data: List, columns=[]) -> pd.DataFrame:
     """
-    df = pd.read_csv(path)
-    col_name = 'histogram_norm_gray' if density else 'histogram_gray'
-    for image in images:
-        image_name = os.path.basename(image)
-        img = Image.open(image)
-        img = np.array(img)
-        img_gray = ConversionEspaceCouleur.rgb_to_gray(img)
-        hist = DescripteurCouleurs.histogramme_rgb(img_gray, density=density)
-        if df[df['image'] == image_name].empty:
-            df = df.append({'image': image_name, col_name: hist}, ignore_index=True)
-        else:
-            df.loc[df['image'] == image_name, col_name] = hist
-    df.to_csv(path, index=False)
+    Convert a list of dictionaries to a pandas DataFrame.
     
-
-def apply_functions_to_images(image_paths: List[str], function_names: List[str], output_csv: str):
-    """
-    Applique des fonctions de conversion à une ou plusieurs images et sauvegarde les résultats dans un fichier CSV.
-
     Args:
-        image_paths (List[str]): Liste des chemins d'accès des images.
-        function_names (List[str]): Liste des noms des fonctions à appliquer aux images.
-        output_csv (str): Chemin du fichier CSV de sortie.
-
+        data (list): A list of dictionaries.
+        
     Returns:
-        None
+        pd.DataFrame: The pandas DataFrame.
     """
-    # Obtenez les méthodes de la classe ConversionEspaceCouleur
-    methods = {func: getattr(ConversionEspaceCouleur, func) for func in dir(ConversionEspaceCouleur) 
-               if callable(getattr(ConversionEspaceCouleur, func)) and not func.startswith("__")}
-    
-    # Tri des noms de fonctions par ordre alphabétique et en minuscules
-    function_names = sorted([name.lower() for name in function_names])
-    
-    # Créez une liste pour stocker les résultats
-    results = []
-
-    # Parcourez chaque image
-    for image_path in image_paths:
-        # Chargez l'image en tant que tableau NumPy
-        
-        image = np.array(Image.open(image_path))
-        
-        # Créez un dictionnaire pour stocker les résultats pour cette image
-        result = {'image_path': image_path}
-        
-        # Appliquez chaque fonction spécifiée
-        for func_name in function_names:
-            func_name_camel = func_name.lower()  # Assurez-vous que les noms correspondent au format
-            if func_name_camel in methods:
-                # Exécutez la fonction
-                output = methods[func_name_camel](image)
-                # Sauvegarder un résumé (par ex., moyenne des valeurs de sortie) dans le CSV
-                result[func_name] = np.mean(output)
-            else:
-                result[func_name] = None
-        
-        # Ajoutez le résultat de cette image à la liste
-        results.append(result)
-    
-    # Créez un DataFrame pandas à partir des résultats
-    df = pd.DataFrame(results)
-    
-    # Sauvegardez le DataFrame dans un fichier CSV
-    df.to_csv(output_csv, index=False)
+    df = pd.DataFrame(data, columns=columns)
+    # df['image'] = df['image'].apply(lambda x: x.split('_')[0])
+    # pour la precision renvoyer 3 chiffres après la virgule
+    df['precision'] = df['precision'].apply(lambda x: round(float(x), 2))
+    return df
 
 
 def convert_and_resize_images(src_folder, dest_folder, size=(448, 448)):

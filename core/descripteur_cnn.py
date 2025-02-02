@@ -1,10 +1,13 @@
 # Description: This file contains the class DescripteurCNN which is used to extract features from images using a pre-trained CNN model. return the flatten features extracted from the image.
+import os
+
+os.environ["KERAS_BACKEND"] = "torch"
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras.applications.vgg16 import preprocess_input
-from tensorflow.keras.models import Model
+from keras.applications import VGG16, MobileNet
+from keras.applications.vgg16 import preprocess_input
+from keras.models import Model
+from keras.layers import Flatten
 from PIL import Image
 
 class DescripteurCNN:
@@ -22,8 +25,9 @@ class DescripteurCNN:
             Returns:
                 None
         """
-        self.model = model
-        self.model = Model(inputs=self.model.input, outputs=self.model.get_layer('block5_pool').output)
+        self.model_vgg16 = Model(inputs=model.input, outputs=model.output)
+        self.model_mobilenet = MobileNet(weights='imagenet', include_top=False)
+        # self.model = Model(inputs=self.model.input, outputs=self.model.get_layer('block5_pool').output)
         self.shape = shape
         
         
@@ -33,7 +37,7 @@ class DescripteurCNN:
     def __repr__(self):
         return self.__str__()
     
-    def extract_features(self, image_path):
+    def extract_features(self, image, type='VGG16'):
         """
             Extrait les caractéristiques d'une image à l'aide d'un modèle CNN pré-entrainé
             Usage:
@@ -43,9 +47,10 @@ class DescripteurCNN:
             Returns:
                 np.array - Caractéristiques extraites de l'image
         """
-        image = preprocess_input(image_path)
-        image = np.expand_dims(image, axis=0)
-        features = self.model.predict(image)
+        img = np.expand_dims(image, axis=0)
+        img = preprocess_input(img)
+        features = self.model_vgg16.predict(img) if type == 'VGG16' else self.model_mobilenet.predict(img)
         features = features.flatten()
         
         return features
+    

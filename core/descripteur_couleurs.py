@@ -1,9 +1,8 @@
 import numpy as np
-
 class DescripteurCouleurs:
     
     @staticmethod
-    def blob(image, espace_color, interval=3, dim_fen=4, canaux_rgb_indexe=(2, 2, 2)):
+    def blob(image, espace_color, interval=4, dim_fen=3, canaux_rgb_indexe=(2, 2, 2)):
         """
         Calcule l'histogramme de blobs d'une image.
         
@@ -28,7 +27,10 @@ class DescripteurCouleurs:
             return image
             
         
-        rows, cols = image.shape
+        if len(image.shape) == 3:
+            rows, cols, _ = image.shape
+        else:
+            rows, cols = image.shape
         tableau = np.zeros((nb_lignes, interval), dtype=int)
         
         # Précalculer le nombre d'éléments par sous-matrice

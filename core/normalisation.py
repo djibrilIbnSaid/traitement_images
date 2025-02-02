@@ -21,6 +21,8 @@ class Normalisation:
             return Normalisation.statistiques(image)
         elif type == "MinMax":
             return Normalisation.min_max(image)
+        elif type == "Rang":
+            return Normalisation.rang(image)
         return np.array([])
     
     @staticmethod
@@ -67,4 +69,24 @@ class Normalisation:
         Returns:
             None
         """
-        return (image - np.min(image)) / (np.max(image) - np.min(image))
+        image = (image - np.min(image)) / (np.max(image) - np.min(image))
+        return image.flatten()
+    
+    @staticmethod
+    def rang(image):
+        """
+        Calcule la normalisation par le rang.
+        
+        Args:
+            image (np.ndarray): L'image à normaliser.
+        
+        Returns:
+            np.ndarray: L'image normalisée par le rang.
+        """
+        rang_image = np.linalg.matrix_rank(image)
+        normalized_image = np.zeros_like(image, dtype=float)
+        
+        for i in range(image.shape[2]):  # Pour chaque canal de couleur
+            normalized_image[:, :, i] = image[:, :, i] / rang_image
+        
+        return normalized_image.reshape(-1)
