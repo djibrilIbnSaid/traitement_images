@@ -106,7 +106,7 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
     with gr.Row():
         discriptors_selected = gr.CheckboxGroup(discriptors, label="Descripeteus", info="Selectionner les descripteurs")
         offline = gr.Checkbox(label="SQLite", value=True, info="Accès à la base de données", interactive=True)
-        mean_average_precision = gr.Checkbox(label="MAP", value=False, info="Mean average precision", interactive=True)
+        mean_average_precision = gr.Checkbox(label="MAP", value=False, info="Mean average precision", interactive=True, visible=False)
         
     with gr.Row():
         base_image = gr.Image(type="filepath", label="Téléchargez une image ici")
@@ -191,7 +191,7 @@ with gr.Blocks(css="footer {visibility: hidden}", title="INFO-911") as demo:
     exemples_precisions = gr.Dataframe(traitement.precisions, label="Precisions", interactive=True)
     
     def refresh_data():
-        traitement.get_mean_average_precision(limit=20)
+        traitement.get_mean_average_precision(limit=50)
         return traitement.precisions
     
     refresh.click(

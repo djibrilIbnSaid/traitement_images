@@ -41,28 +41,36 @@ class MeanAvaragePrecision:
         
         
         # A supprimer
-        distances = ["euclidienne", "manhattan"]
+        distances = ["chebyshev", "minowski"]
         colors = {
-            "2D": ["rgb indexe"]
+            "2D": ["gray basic", "rgb indexe"],
+            "3D": ["rgb", "yiq"],
+            "H pondere par S": ["hsv", "hsl"],
+            "Blobs": ["rgb indexe"]
         }
-        color_descriptors = ["2D"]
-        normalisations = ["Occurence", "Frequence", "Statistique", "MinMax", "Rang"]
+        color_descriptors = ["2D", "3D", "H pondere par S", "Blobs"]
+        normalisations = ["Occurence", "Frequence"]
+        descripteur_formes = ["HOG"]
+        filters = ["Sobel"]
         descripteur_textures = ["LBP"]
-        for discriptor in color_descriptors:
-            for espace_color in colors[discriptor]:
-                for normalisation in normalisations:
-                    for desc_texture in descripteur_textures:
-                        for distance in distances:
-                            precision = 0
-                            print(f"Discriptor: {discriptor}, Color: {espace_color}, Normalisation: {normalisation}, Distance: {distance}")
-                            try:
-                                for filename in images:
-                                    p, id = self.traitement.recherche_images(base_image=filename, distance=distance, color_descriptor=discriptor, espace_color=espace_color, nomalisation=normalisation, texture_descriptor=desc_texture, maen_average_precision=True)
-                                    precision += p
-                                precision /= len(images)
-                                self.save_map(id, distance=distance, color_descriptor=discriptor, espace_color=espace_color, normalisation=normalisation, precision=precision)
-                            except Exception as e:
-                                self.log_exception(f"Discriptor: {discriptor}, Color: {espace_color}, Normalisation: {normalisation}, Distance: {distance}", e)
+        cnn_descriptors = ["VGG16"]
+        
+        
+        # for discriptor in color_descriptors:
+        #     for espace_color in colors[discriptor]:
+        #         for normalisation in normalisations:
+        #             for desc_texture in descripteur_textures:
+        #                 for distance in distances:
+        #                     precision = 0
+        #                     print(f"Discriptor: {discriptor}, Color: {espace_color}, Normalisation: {normalisation}, Distance: {distance}")
+        #                     try:
+        #                         for filename in images:
+        #                             p, id = self.traitement.recherche_images(base_image=filename, distance=distance, color_descriptor=discriptor, espace_color=espace_color, nomalisation=normalisation, texture_descriptor=desc_texture, maen_average_precision=True)
+        #                             precision += p
+        #                         precision /= len(images)
+        #                         self.save_map(id, distance=distance, color_descriptor=discriptor, espace_color=espace_color, normalisation=normalisation, precision=precision)
+        #                     except Exception as e:
+        #                         self.log_exception(f"Discriptor: {discriptor}, Color: {espace_color}, Normalisation: {normalisation}, Distance: {distance}", e)
             
             
         
@@ -84,8 +92,9 @@ class MeanAvaragePrecision:
         #                     self.save_map(id, distance=distance, color_descriptor=discriptor, espace_color=espace_color, normalisation=normalisation, precision=precision)
         #                 except Exception as e:
         #                     self.log_exception(f"Discriptor: {discriptor}, Color: {espace_color}, Normalisation: {normalisation}, Distance: {distance}", e)
+
         
-        # # Parcourir les discripteurs de forme
+        # Parcourir les discripteurs de forme
         # for discriptor in descripteur_formes:
         #     for filter in filters:
         #         for distance in distances:
@@ -100,7 +109,7 @@ class MeanAvaragePrecision:
         #             except Exception as e:
         #                 self.log_exception(f"Discriptor: {discriptor}, Filter: {filter}, Distance: {distance}", e)
         
-        # # Parcourir les discripteurs de texture
+        # Parcourir les discripteurs de texture
         # for discriptor in descripteur_textures:
         #     for distance in distances:
         #         precision = 0
@@ -114,19 +123,19 @@ class MeanAvaragePrecision:
         #         except Exception as e:
         #             self.log_exception(f"Discriptor: {discriptor}, Distance: {distance}", e)
         
-        # # Parcourir les discripteurs CNN
-        # for discriptor in cnn_descriptors:
-        #     for distance in distances:
-        #         precision = 0
-        #         print(f"Discriptor: {discriptor}, Distance: {distance}")
-        #         try:
-        #             for filename in images:
-        #                 p, id = self.traitement.recherche_images(base_image=filename, distance=distance, cnn_descriptor=discriptor, maen_average_precision=True)
-        #                 precision += p
-        #             precision /= len(images)
-        #             self.save_map(id, distance=distance, cnn_descriptor=discriptor, precision=precision)
-        #         except Exception as e:
-        #             self.log_exception(f"Discriptor: {discriptor}, Distance: {distance}", e)
+        # Parcourir les discripteurs CNN
+        for discriptor in cnn_descriptors:
+            for distance in distances:
+                precision = 0
+                print(f"Discriptor: {discriptor}, Distance: {distance}")
+                try:
+                    for filename in images:
+                        p, id = self.traitement.recherche_images(base_image=filename, distance=distance, cnn_descriptor=discriptor, maen_average_precision=True)
+                        precision += p
+                    precision /= len(images)
+                    self.save_map(id, distance=distance, cnn_descriptor=discriptor, precision=precision)
+                except Exception as e:
+                    self.log_exception(f"Discriptor: {discriptor}, Distance: {distance}", e)
         
         # # Parcourir les descripteurs de couleur, et de forme
         # for color_discriptor in color_descriptors:

@@ -32,6 +32,7 @@ class Traitement:
         self.db_connect.initial_db(self.table_name)
         self.precisions = []
         self.get_mean_average_precision(limit=10)
+        self.cnn = DescripteurCNN()
         
         
     def __str__(self):
@@ -58,7 +59,7 @@ class Traitement:
             return[]
         cnn = None
         if cnn_descriptor is not None:
-            cnn = DescripteurCNN()
+            cnn = self.cnn
         
         id = f'_{color_descriptor}_{espace_color}_{nomalisation}_{shape_descriptor}_{filter}_{texture_descriptor}_{cnn_descriptor}_{canal_r}_{canal_g}_{canal_b}_{dim_fen}_{interval}'
 
