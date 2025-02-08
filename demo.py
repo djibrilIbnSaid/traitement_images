@@ -24,7 +24,7 @@ normalisations = ["Occurence", "Frequence", "Statistique", "MinMax", "Rang"]
 descripteur_formes = ["HOG", "HOPN", "HBO", "HBOQ"]
 filters = ["Sobel", "Prewitt", "Scharr"]
 descripteur_textures = ["LBP", "Statistique", "GLCM"]
-cnn_descriptors = ["VGG16", "MobileNet"]
+cnn_descriptors = ["VGG16"]
 
 
 def toggle_fields(selected_discriptors):    
