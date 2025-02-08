@@ -5,6 +5,8 @@ services:
       - "7860:7860"
     volumes:
       - .:/app
+      - ${DB_IMAGE_PATH}:/app/data  
     environment:
       - PYTHONUNBUFFERED=1
+      - DB_IMAGE_PATH=/app/data
     command: ["python", "demo.py"]
